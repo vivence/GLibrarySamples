@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Ghost库示例</string>
+    <string name="async_task">异步任务</string>
+</resources>
