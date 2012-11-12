@@ -1,6 +1,8 @@
 package ghost.library.samples;
 
 import ghost.library.concurrent.Task;
+import ghost.library.concurrent.TaskDaemon;
+import ghost.library.concurrent.TaskDaemonFactory;
 import ghost.library.concurrent.Task.State;
 import ghost.library.utility.IObserver;
 import ghost.library.utility.IObserverManager;
@@ -16,6 +18,7 @@ import android.app.Activity;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.Editable;
 import android.util.Log;
 
 class AbortTask extends Task implements Runnable, Task.Context{
@@ -33,9 +36,9 @@ class AbortTask extends Task implements Runnable, Task.Context{
 		}
 		if (execute(this))
 		{
-			while (true)
+			for (int i = 0; i < 15 && Task.State.EXECUTING == getState(); ++i)
 			{
-				Log.d(AsyncTaskActivity.LOG_TAG, this+" working on thread: "+currentThread.getId());
+				Log.d(AsyncTaskActivity.LOG_TAG, this+" working("+(i+1)+") on thread: "+currentThread.getId());
 				try
 				{
 					Thread.sleep(1000);
@@ -119,6 +122,7 @@ public class AsyncTaskActivity extends Activity implements IObserverManager {
 	
 	private ExecutorService service_;
 	private TaskObserver taskObserver_;
+	private TaskDaemon taskDaemon_;
 	private Handler handler_;
 	
 	private ObserverManagerImpl observerManagerImpl_;
@@ -132,6 +136,7 @@ public class AsyncTaskActivity extends Activity implements IObserverManager {
 	{
 		close();
 		service_ = service;
+		taskDaemon_ = TaskDaemonFactory.newTaskDaemonWorkOnThread(1000);
 	}
 	
 	public void close()
@@ -141,14 +146,21 @@ public class AsyncTaskActivity extends Activity implements IObserverManager {
 			service_.shutdown();
 			service_ = null;
 		}
+		if (null != taskDaemon_)
+		{
+			taskDaemon_.abortAllTasks();
+			taskDaemon_ = null;
+		}
 	}
 	
 	public void newLog(CharSequence log)
 	{
 		Log.d(LOG_TAG, log.toString());
 		LogTextView logTextView = (LogTextView)findViewById(R.id.text);
-		logTextView.getText().insert(0, "\n");
-		logTextView.getText().insert(0, log);
+		Editable editable = logTextView.getText();
+		editable.insert(0, "\n");
+		editable.insert(0, log);
+		logTextView.setText(editable);
 	}
 	
 	@Override
@@ -177,35 +189,21 @@ public class AsyncTaskActivity extends Activity implements IObserverManager {
 		}
 		handler_.post(new Runnable() {
 			
-			private AbortTask task_;
-			
 			@Override
 			public void run()
 			{
 				// TODO Auto-generated method stub
-				if (null != task_)
-				{
-					task_.abort();
-					task_ = null;
-				}
-				else
-				{
-					task_ = new AbortTask();
-					task_.addObserver(AsyncTaskActivity.this.taskObserver_);
-					if (null != AsyncTaskActivity.this.service_)
-					{
-						task_.await(null);
-						AsyncTaskActivity.this.service_.execute(task_);
-					}
-				}
 				if (null != AsyncTaskActivity.this.handler_)
 				{
+					AbortTask task = new AbortTask();
+					task.addObserver(AsyncTaskActivity.this.taskDaemon_);
+					task.addObserver(AsyncTaskActivity.this.taskObserver_);
+					if (null != AsyncTaskActivity.this.service_)
+					{
+						task.await(null);
+						AsyncTaskActivity.this.service_.execute(task);
+					}
 					AsyncTaskActivity.this.handler_.postDelayed(this, 1000);
-				}
-				else if (null != task_)
-				{
-					task_.abort();
-					task_ = null;
 				}
 			}
 		});
