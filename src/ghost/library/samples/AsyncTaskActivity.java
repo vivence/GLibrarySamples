@@ -117,6 +117,13 @@ public class AsyncTaskActivity extends Activity implements IObserverManager {
 				}
 			});
 		}
+
+		@Override
+		public void onProgress(Task task, int current, int max)
+		{
+			// TODO Auto-generated method stub
+			
+		}
 		
 	}
 	
