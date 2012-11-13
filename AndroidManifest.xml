@@ -24,6 +24,11 @@
             android:label="@string/async_task"
             android:configChanges="keyboardHidden|orientation"/>
         
+        <activity 
+            android:name=".MultiTouchImageActivity"
+            android:label="@string/multi_touch_image"
+            android:configChanges="keyboardHidden|orientation"/>
+        
     </application>
 
 </manifest>

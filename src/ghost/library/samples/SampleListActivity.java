@@ -27,6 +27,7 @@ public class SampleListActivity extends ListActivity {
 			// TODO Auto-generated constructor stub
 			sampleActivityClasses_ = new ArrayList<Class<? extends Activity>>();
 			sampleActivityClasses_.add(AsyncTaskActivity.class);
+			sampleActivityClasses_.add(MultiTouchImageActivity.class);
 		}
 
 		@Override
